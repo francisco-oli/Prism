@@ -4,7 +4,7 @@ Prism is a nutrition app that tells you whether a food actually fits *your* goal
 
 ## Motivation
 
-I built Prism after watching nutrition misinformation affect people close to me — conflicting advice, misleading packaging, and generic "healthy/unhealthy" labels that ignore who's actually eating the food. Prism is my attempt at something better: a personalized nutrition pipeline that reasons about a specific person's goals rather than giving everyone the same verdict.
+I built Prism after watching nutrition misinformation affect people close to me — conflicting advice, misleading packaging, and generic "healthy/unhealthy" labels that ignore who's actually eating the food. Prism is my attempt at something better: a personalized nutrition pipeline that reasons about a specific person's goals. Rather than giving everyone the same verdict, Prism tries to understand in what context certain foods can be used based on the user profile.
 
 It's built end-to-end (mobile app, backend, LLM pipeline) and deployed to real users — my family uses it to check whether a food is healthy for them and to understand what's actually in it.
 
