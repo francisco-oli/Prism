@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+
+# app (Expo)
+app/.expo/
+app/dist/
+app/web-build/
+app/expo-env.d.ts
+app/ios/
+app/android/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+
+# backend (Next.js)
+backend/.next/
+backend/out/
+backend/build/
+backend/.vercel/
+backend/next-env.d.ts
+
+# env / secrets
+.env
+.env.*
+!.env.example
+serviceAccountKey.json
+
+# misc
+.DS_Store
+*.pem
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
