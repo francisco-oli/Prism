@@ -79,7 +79,7 @@ Set `BACKEND_URL` in `app/src/api.ts` to the address of your server.
 `backend-py` includes a `Dockerfile`. To deploy on AWS Elastic Beanstalk:
 
 1. Zip the `Dockerfile`, `requirements.txt`, and the `app` folder, with the `Dockerfile` at the top level of the zip.
-2. Create an Elastic Beanstalk application on the Docker platform and upload the zip.
+2. Create an Elastic Beanstalk application and upload the zip.
 3. Set these environment properties:
    - `GEMINI_API_KEY`: your Gemini key
    - `FIREBASE_CREDENTIALS_JSON`: the full contents of `serviceAccountKey.json`
@@ -93,3 +93,4 @@ Do not put keys in the zip or the Docker image.
 - Server: FastAPI (Python), Next.js
 - Database: Firebase Firestore
 - LLM: Google Gemini
+- Cloud Hosting: AWS Elastic Beanstalk
