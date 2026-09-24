@@ -1,44 +1,42 @@
 # Prism
 
-Prism is a nutrition app. You scan a food or type it in, and it tells you if that food is a good choice **for you**, based on your own goals.
+Prism is a nutrition app that tells you whether a food fits *your* goals, not just whether it is "healthy" in general. Scan a barcode or type in a food, and Prism returns a short assessment written for your profile: your goals, your activity level, your language, and how much detail you want.
 
-## Why I made it
+## Motivation
 
-I saw people close to me get confused by nutrition advice. Labels and articles often say "healthy" or "unhealthy" without thinking about who is eating the food. Prism tries to do better. It looks at your profile and explains how a food fits into your life.
+I built Prism after seeing nutrition misinformation affect people close to me. Packaging claims, conflicting advice, and generic "healthy" or "unhealthy" labels rarely consider who is actually eating the food. Prism takes a different approach: it uses your profile to explain in what context a food works for you and when it does not.
 
-I built the whole thing myself: the phone app, the server, and the AI part. My family uses it to check if a food is healthy and to understand what they are eating.
+It is built end to end (mobile app, server, and LLM pipeline) and is used by real people. My family uses it to check whether a food is healthy for them and to understand what they are eating.
 
-## What it does
+## How it works
 
-1. You set up a profile: your goals, how active you are, your language, and how much detail you want.
-2. You scan a barcode or type a food.
+1. You create a profile with your goals, activity level, language, and preferred level of detail.
+2. You scan a barcode or enter a food manually.
 3. The app sends the food and your profile to the server.
-4. The server asks an AI model (Google Gemini) to write a short review for you.
-5. You see the calories, protein, carbs, fat, and the review.
+4. The server asks Google Gemini for a personalized assessment: a short review, whether the food is recommended for you, and its macros.
+5. The app shows the result and saves it to your history.
 
-### Saving answers to avoid repeat work
+### Caching
 
-Asking the AI every time is slow and costs money. So the server saves each answer in a database (Firestore).
+Calling the model on every request is slow and costly, so the server caches results in Firestore. Each result is stored under a key built from the food data and the profile fields that change the output (goals, activity level, explanation depth, language). Goals are sorted before hashing, so the same goals in a different order produce the same key.
 
-Each saved answer has a label made from the food and the parts of your profile that change the answer. If the same request comes again, the server returns the saved answer. If it is new, the server asks the AI and saves the result.
+If the key already exists, the server returns the stored result. If not, it calls Gemini and stores the response. Two users with different profiles never share a result for the same food, but repeated identical requests skip the model call.
 
-The label ignores the order of your goals. "Muscle, Fat loss" and "Fat loss, Muscle" count as the same request.
-
-## Folders
+## Project structure
 
 ```
-app/         The phone app (React Native / Expo)
-backend/     The server, first version (Next.js)
-backend-py/  The server, second version (Python / FastAPI)
+app/         Mobile app (React Native / Expo)
+backend/     Server, original version (Next.js)
+backend-py/  Server, Python port (FastAPI)
 ```
 
-The two servers do the same job. You only need one. The app works with either one.
+Both servers expose the same `POST /api/analyze` endpoint and use the same Firestore cache, so the app works with either one.
 
-## How to run it
+## Running locally
 
-You need your own Gemini API key and a Firebase service account file. They are not in this repo.
+You need your own Gemini API key and a Firebase service account file. Neither is included in this repo.
 
-### Server (Python version)
+### Server (FastAPI)
 
 ```bash
 cd backend-py
@@ -48,15 +46,15 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Open `.env` and add your Gemini key. Put your `serviceAccountKey.json` file in the `backend-py` folder. Then start the server:
+Add your Gemini key to `.env` and place `serviceAccountKey.json` in the `backend-py` folder. Then start the server:
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 3000 --env-file .env
 ```
 
-Do not write your keys in `.env.example`. That file is public. Only use `.env`.
+Keep your keys in `.env` only. `.env.example` is committed to the repo and must stay blank.
 
-### Server (Next.js version)
+### Server (Next.js)
 
 ```bash
 cd backend
@@ -65,9 +63,9 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Add your Gemini key to `.env.local` and put `serviceAccountKey.json` in the `backend` folder.
+Add your Gemini key to `.env.local` and place `serviceAccountKey.json` in the `backend` folder.
 
-### Phone app
+### Mobile app
 
 ```bash
 cd app
@@ -75,24 +73,24 @@ npm install
 npx expo start
 ```
 
-Open `app/src/api.ts` and set `BACKEND_URL` to the address of your server.
+Set `BACKEND_URL` in `app/src/api.ts` to the address of your server.
 
-## Putting the Python server online (AWS)
+## Deploying the FastAPI server to AWS
 
-The Python server comes with a `Dockerfile`. To deploy it on AWS Elastic Beanstalk:
+`backend-py` includes a `Dockerfile`. To deploy on AWS Elastic Beanstalk:
 
-1. Make a zip file with `Dockerfile`, `requirements.txt` and the `app` folder. The `Dockerfile` must be at the top of the zip.
-2. Create a Beanstalk app with the Docker platform and upload the zip.
-3. In the settings, add these two variables:
+1. Zip the `Dockerfile`, `requirements.txt`, and the `app` folder, with the `Dockerfile` at the top level of the zip.
+2. Create an Elastic Beanstalk application on the Docker platform and upload the zip.
+3. Set these environment properties:
    - `GEMINI_API_KEY`: your Gemini key
-   - `FIREBASE_CREDENTIALS_JSON`: the full text inside your `serviceAccountKey.json`
-4. Change `BACKEND_URL` in the app to your new server address.
+   - `FIREBASE_CREDENTIALS_JSON`: the full contents of `serviceAccountKey.json`
+4. Update `BACKEND_URL` in the app to the new server address.
 
-Never put keys inside the zip or the Docker image.
+Do not put keys in the zip or the Docker image.
 
 ## Built with
 
-- Phone app: React Native, Expo
-- Server: FastAPI (Python) or Next.js
+- App: React Native, Expo
+- Server: FastAPI (Python), Next.js
 - Database: Firebase Firestore
-- AI: Google Gemini
+- LLM: Google Gemini
