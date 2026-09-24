@@ -1,0 +1,7 @@
+.env*
+!.env.example
+serviceAccountKey.json
+__pycache__/
+.venv/
+.vscode/
+*.pyc
