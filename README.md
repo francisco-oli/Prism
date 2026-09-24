@@ -1,57 +1,73 @@
 # Prism
 
-Prism is a nutrition app that tells you whether a food actually fits *your* goals — not a generic label. Scan a barcode or log a meal, and Prism gives you a personalized, LLM-generated assessment based on your goals, activity level, and how deep an explanation you want.
+Prism is a nutrition app. You scan a food or type it in, and it tells you if that food is a good choice **for you**, based on your own goals.
 
-## Motivation
+## Why I made it
 
-I built Prism after watching nutrition misinformation affect people close to me — conflicting advice, misleading packaging, and generic "healthy/unhealthy" labels that ignore who's actually eating the food. Prism is my attempt at something better: a personalized nutrition pipeline that reasons about a specific person's goals. Rather than giving everyone the same verdict, Prism tries to understand in what context certain foods can be used based on the user profile.
+I saw people close to me get confused by nutrition advice. Labels and articles often say "healthy" or "unhealthy" without thinking about who is eating the food. Prism tries to do better. It looks at your profile and explains how a food fits into your life.
 
-It's built end-to-end (mobile app, backend, LLM pipeline) and deployed to real users — my family uses it to check whether a food is healthy for them and to understand what's actually in it.
+I built the whole thing myself: the phone app, the server, and the AI part. My family uses it to check if a food is healthy and to understand what they are eating.
 
-## How it works
+## What it does
 
-- **Mobile app** (Expo / React Native) — users scan a barcode or log a food manually, set up a profile (goals, activity level, preferred explanation depth, language), and get back a personalized assessment: macros, an AI-written review, and whether the food supports their specific goals.
-- **Backend** (Next.js API route) — receives the scanned food + user profile, builds a prompt tailored to that user, and calls Gemini to generate a structured, personalized assessment.
-- **Caching layer** — assessments are cached in Firestore, keyed by a fingerprint hashed from the *food data + the parts of the user's profile that affect the output* (goals, activity level, explanation depth, language), with list-valued fields normalized so equivalent inputs (e.g. goals listed in a different order) hash identically. This keeps results correct per-user while avoiding redundant model calls for requests that are effectively the same.
+1. You set up a profile: your goals, how active you are, your language, and how much detail you want.
+2. You scan a barcode or type a food.
+3. The app sends the food and your profile to the server.
+4. The server asks an AI model (Google Gemini) to write a short review for you.
+5. You see the calories, protein, carbs, fat, and the review.
+
+### Saving answers to avoid repeat work
+
+Asking the AI every time is slow and costs money. So the server saves each answer in a database (Firestore).
+
+Each saved answer has a label made from the food and the parts of your profile that change the answer. If the same request comes again, the server returns the saved answer. If it is new, the server asks the AI and saves the result.
+
+The label ignores the order of your goals. "Muscle, Fat loss" and "Fat loss, Muscle" count as the same request.
+
+## Folders
 
 ```
-app/         Expo / React Native mobile app
-backend/     Next.js API + Firestore-backed caching + Gemini integration
-backend-py/  FastAPI port of the backend, containerized for AWS
+app/         The phone app (React Native / Expo)
+backend/     The server, first version (Next.js)
+backend-py/  The server, second version (Python / FastAPI)
 ```
 
-The backend was first written in Next.js and then ported to FastAPI. Both expose the same `POST /api/analyze` contract (`{success, source, data}`) and share the same Firestore cache, so the app works against either one by changing `BACKEND_URL`.
+The two servers do the same job. You only need one. The app works with either one.
 
-## Tech stack
+## How to run it
 
-- **App**: React Native, Expo, React Navigation, `expo-camera` for barcode scanning, on-device storage via AsyncStorage
-- **Backend**: Next.js (App Router), Firebase Admin / Firestore, Google Gemini (`@google/genai`)
-- **Backend (FastAPI)**: FastAPI, Pydantic, `google-cloud-firestore`, `google-genai`, Docker
+You need your own Gemini API key and a Firebase service account file. They are not in this repo.
 
-## Running it locally
+### Server (Python version)
 
-### Backend
+```bash
+cd backend-py
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+Open `.env` and add your Gemini key. Put your `serviceAccountKey.json` file in the `backend-py` folder. Then start the server:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 3000 --env-file .env
+```
+
+Do not write your keys in `.env.example`. That file is public. Only use `.env`.
+
+### Server (Next.js version)
 
 ```bash
 cd backend
 npm install
-cp .env.example .env.local   # fill in GEMINI_API_KEY
-# also add your own Firebase serviceAccountKey.json (not committed)
+cp .env.example .env.local
 npm run dev
 ```
 
-### Backend (FastAPI)
+Add your Gemini key to `.env.local` and put `serviceAccountKey.json` in the `backend` folder.
 
-```bash
-cd backend-py
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env         # fill in GEMINI_API_KEY
-# also add your own serviceAccountKey.json (not committed)
-uvicorn app.main:app --host 0.0.0.0 --port 3000 --env-file .env
-```
-
-### App
+### Phone app
 
 ```bash
 cd app
@@ -59,37 +75,24 @@ npm install
 npx expo start
 ```
 
-Point the app's `BACKEND_URL` (`app/src/api.ts`) at wherever the backend is running.
+Open `app/src/api.ts` and set `BACKEND_URL` to the address of your server.
 
-## FastAPI backend
+## Putting the Python server online (AWS)
 
-`backend-py/` is organized so the request flow stays in one small route and each concern lives in its own module:
+The Python server comes with a `Dockerfile`. To deploy it on AWS Elastic Beanstalk:
 
-```
-app/
-  main.py              FastAPI app, /api router, health check
-  routes/analyze.py    POST /api/analyze: fingerprint -> cache lookup -> Gemini on miss -> store
-  services/
-    fingerprint.py     SHA-256 cache key from the food data + profile fields
-    cache.py           Firestore get/set
-    gemini.py          Gemini call, JSON output parsing
-  prompts.py           system prompt and per-request prompt builder
-  schemas.py           Pydantic request models
-  config.py            settings from environment variables
-```
+1. Make a zip file with `Dockerfile`, `requirements.txt` and the `app` folder. The `Dockerfile` must be at the top of the zip.
+2. Create a Beanstalk app with the Docker platform and upload the zip.
+3. In the settings, add these two variables:
+   - `GEMINI_API_KEY`: your Gemini key
+   - `FIREBASE_CREDENTIALS_JSON`: the full text inside your `serviceAccountKey.json`
+4. Change `BACKEND_URL` in the app to your new server address.
 
-Notes on the port:
+Never put keys inside the zip or the Docker image.
 
-- **Cache-key compatibility.** Python formats `150.0` where JavaScript formats `150`, so the fingerprint normalizes numbers to match the Next.js output. The same input produces the identical hash in both backends, so existing cache entries keep hitting.
-- **Response contract.** Cache hits and misses both return `{success, source, data}`, with errors as `{success: false, error}`, so the mobile app needed no changes.
+## Built with
 
-### Deploying with Docker (AWS Elastic Beanstalk)
-
-The `Dockerfile` builds a slim image that runs as a non-root user and listens on port 8080. Zip `Dockerfile`, `requirements.txt` and `app/` (with the `Dockerfile` at the zip root) and upload it as an Elastic Beanstalk Docker source bundle. Secrets are never baked into the image; set them as environment properties:
-
-| Variable | Purpose |
-| --- | --- |
-| `GEMINI_API_KEY` | Gemini API key |
-| `FIREBASE_CREDENTIALS_JSON` | Full contents of the Firebase service account JSON (AWS injects secrets as strings, not files) |
-
-Locally, `GOOGLE_APPLICATION_CREDENTIALS` can point to the key file instead. On Google Cloud, neither is needed because the platform's default credentials are used.
+- Phone app: React Native, Expo
+- Server: FastAPI (Python) or Next.js
+- Database: Firebase Firestore
+- AI: Google Gemini
