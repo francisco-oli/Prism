@@ -52,7 +52,6 @@ Add your Gemini key to `.env` and place `serviceAccountKey.json` in the `backend
 uvicorn app.main:app --host 0.0.0.0 --port 3000 --env-file .env
 ```
 
-Keep your keys in `.env` only. `.env.example` is committed to the repo and must stay blank.
 
 ### Server (Next.js)
 
