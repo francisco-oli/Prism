@@ -2,7 +2,7 @@ import os
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-MODEL_NAME = "gemini-3.5-flash-lite"
+MODEL_NAME = "gemini-3.6-flash"
 
 CACHE_COLLECTION = "food_cache"
 
