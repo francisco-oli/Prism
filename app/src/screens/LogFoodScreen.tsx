@@ -170,7 +170,7 @@ export default function LogFoodScreen() {
     return (
       <View style={styles.cameraContainer}>
         <CameraView 
-          style={StyleSheet.absoluteFillObject} 
+          style={StyleSheet.absoluteFill}
           barcodeScannerSettings={{ barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e"] }} 
           onBarcodeScanned={({ data }) => fetchProductData(data)} 
         />
