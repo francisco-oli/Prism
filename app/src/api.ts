@@ -24,7 +24,7 @@ export interface AnalyzeResponse {
 }
 
 // Using your local IPv4 address
-const BACKEND_URL = "http://192.168.68.106:3000/api/analyze";
+const BACKEND_URL = "http://192.168.68.113:8000/api/analyze";
 
 export async function analyzeFood(scannedData: ScannedData): Promise<AIAnalysisData> {
   const response = await fetch(BACKEND_URL, {
