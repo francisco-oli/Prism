@@ -28,8 +28,37 @@ type RootStackParamList = {
       ingredients: string[];
       aiAnalysis: string;
       isRecommended: boolean;
+      category: string;
+      subcategory: string;
     };
   };
+};
+
+// Open Food Facts lists categories from general to specific, but the list also holds
+// free-text tags that aren't in its taxonomy (e.g. "fr:Nutella"). The taxonomy API
+// returns {} for those, and gives each real category's parents so that `category`
+// is the actual parent of `subcategory` when the product sits in several branches.
+const fetchProductCategories = async (hierarchy: string[] = []) => {
+  try {
+    if (hierarchy.length === 0) return { category: '', subcategory: '' };
+
+    const response = await fetch(
+      `https://world.openfoodfacts.org/api/v2/taxonomy?tagtype=categories&fields=name,parents&tags=${encodeURIComponent(hierarchy.join(','))}`
+    );
+    const taxonomy: Record<string, { parents?: string[] }> = await response.json();
+
+    const known = hierarchy.filter((tag) => Object.keys(taxonomy[tag] || {}).length > 0);
+    const subcategory = known[known.length - 1] || '';
+    const parents = taxonomy[subcategory]?.parents || [];
+    const broader = known.slice(0, -1);
+    const category = [...broader].reverse().find((tag) => parents.includes(tag))
+      || broader[broader.length - 1]
+      || '';
+
+    return { category, subcategory };
+  } catch (err) {
+    return { category: '', subcategory: '' };
+  }
 };
 
 export default function LogFoodScreen() {
@@ -41,6 +70,8 @@ export default function LogFoodScreen() {
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
   const [ingredients, setIngredients] = useState('');
+  const [category, setCategory] = useState('');
+  const [subcategory, setSubcategory] = useState('');
 
   const [unknownMacros, setUnknownMacros] = useState(false);
   const [isFromBarcode, setIsFromBarcode] = useState(false);
@@ -58,6 +89,8 @@ export default function LogFoodScreen() {
     setCarbs('');
     setFat('');
     setIngredients('');
+    setCategory('');
+    setSubcategory('');
     setUnknownMacros(false);
     setIsFromBarcode(false); 
     setError(null);
@@ -74,12 +107,16 @@ export default function LogFoodScreen() {
 
       if (json.status === 1 && json.product) {
         const p = json.product;
+        const categories = await fetchProductCategories(p.categories_hierarchy);
+
         setFoodName(p.product_name || p.generic_name || '');
         setCalories(String(p.nutriments?.['energy-kcal_100g'] || 0));
         setProtein(String(p.nutriments?.proteins_100g || 0));
         setCarbs(String(p.nutriments?.carbohydrates_100g || 0));
         setFat(String(p.nutriments?.fat_100g || 0));
         setIngredients(p.ingredients_text || '');
+        setCategory(categories.category);
+        setSubcategory(categories.subcategory);
 
         setUnknownMacros(false);
         setIsFromBarcode(true);
@@ -142,6 +179,8 @@ export default function LogFoodScreen() {
           ingredients: finalIngredients,
           aiAnalysis: data.sugar_translation,
           isRecommended: data.isRecommended,
+          category,
+          subcategory,
         }
       });
       

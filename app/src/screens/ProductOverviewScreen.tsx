@@ -29,6 +29,8 @@ export default function ProductOverviewScreen({ route }: any) {
         ingredients: product.ingredients,
         aiAnalysis: product.aiAnalysis,
         isRecommended: product.isRecommended,
+        category: product.category,
+        subcategory: product.subcategory,
       });
       setIsSaved(true);
     } catch (err) {

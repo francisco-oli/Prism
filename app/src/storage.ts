@@ -11,6 +11,9 @@ export interface FoodEntry {
   ingredients: string[];
   aiAnalysis?: string;
   isRecommended?: boolean;
+  // Open Food Facts category tags (e.g. "en:sodas" / "en:colas"), blank unless scanned
+  category?: string;
+  subcategory?: string;
 }
 
 const STORAGE_KEY = '@food_history';
