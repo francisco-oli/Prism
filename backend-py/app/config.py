@@ -1,4 +1,9 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# config.py is in backend-py/app/, so this points to backend-py/.env
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 

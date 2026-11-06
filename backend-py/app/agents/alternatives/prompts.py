@@ -1,0 +1,1 @@
+ALTERNATIVES_PROMPT = "Give me a healthier alternative snack to a snickers bar"
