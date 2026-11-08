@@ -1,8 +1,8 @@
 from pydantic import BaseModel
+from app.schemas import ScannedData
 
 class AlternativesRequest(BaseModel):
-    barcode: str
-    user_id: str
+    data: ScannedData
 
 
 class Alternative(BaseModel):

@@ -5,6 +5,8 @@ export interface ScannedData {
   fat_g: number;
   ingredients: string[];
   userProfile?: any;
+  category?: string;
+  subcategory?: string;
 }
 
 export interface AIAnalysisData {

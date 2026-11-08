@@ -154,6 +154,9 @@ export default function LogFoodScreen() {
           ? [foodName]
           : ingredients.split(',').map((item) => item.trim()).filter(Boolean),
         userProfile: userProfile,
+        // Blank for manual entries; undefined is left out of the JSON, so the backend gets None
+        category: category || undefined,
+        subcategory: subcategory || undefined,
       };
 
       // @ts-ignore

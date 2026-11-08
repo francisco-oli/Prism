@@ -18,6 +18,8 @@ class ScannedData(BaseModel):
     fat_g: float
     ingredients: List[str]
     userProfile: Optional[UserProfile] = None
+    category: Optional[str] = None
+    subcategory: Optional[str] = None
 
 
 class AnalyzeRequest(BaseModel):

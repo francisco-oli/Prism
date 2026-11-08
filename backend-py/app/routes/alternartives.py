@@ -4,12 +4,14 @@ from app.agents.alternatives.schemas import AlternativesResponse, AlternativesRe
 from app.agents.alternatives.graph import run_alternatives_agent
 
 
-router = APIRouter()
+agent_router = APIRouter()
 
-
-@router.post("/alternatives", response_model=AlternativesResponse)
+@agent_router.post("/alternatives", response_model=AlternativesResponse)
 async def alternatives(req: AlternativesRequest):
     # check cache first (keyed by product barcode)
+
+    print("Food Category: ", req.data.category)
+    print("\nFood Subcategory: ", req.data.subcategory)
     
     return await run_alternatives_agent(req)
   
